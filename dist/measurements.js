@@ -1,29 +1,57 @@
-import { MemoryStorage } from './storage.js';
 export class Measurements {
     init;
+    store;
+    currentMeasurements = new Map();
     measurements = new Map();
-    storage = new MemoryStorage();
-    constructor(init) {
+    constructor(init, store) {
         this.init = init;
-        for (let config of init.measurements) {
-            this.measurements.set(config.key, {
-                config,
-                time: 0,
-            });
+        this.store = store;
+        this.reset();
+    }
+    getMeasurementConfig(key) {
+        const config = this.measurements.get(key);
+        if (!config) {
+            throw new Error('Unknown measurement ' + key);
+        }
+        return config;
+    }
+    reset() {
+        this.currentMeasurements.clear();
+        this.measurements.clear();
+        for (let measurement of this.init.measurements) {
+            this.measurements.set(measurement.key, measurement);
         }
     }
-    downsample(measurements, interval) {
+    rountTime(time, interval) {
+        return Math.floor(time / interval) * interval;
+    }
+    downsample(key, measurements, interval) {
+        const config = this.getMeasurementConfig(key);
         const result = [];
-        for (let [time, value] of measurements) {
-            time = Math.floor(time / interval) * interval;
-            let target = result.find((item) => item[0] === time)?.[1];
-            /*
+        for (let [time, label, value] of measurements) {
+            time = this.rountTime(time, interval);
+            let target = result.find((item) => item[0] === time)?.[2];
             if (!target) {
-              target = this.#createMeasurement(measurement);
-              result.push([time, target]);
+                target = this.#createMeasurement(config.type);
+                result.push([time, label, target]);
             }
             target.push(value);
-            */
+        }
+        return result.map(([time, label, measurement]) => [time, label, measurement.value]);
+    }
+    fill(key, measurements, startTime, endTime, interval) {
+        const config = this.getMeasurementConfig(key);
+        startTime = this.rountTime(startTime, interval);
+        endTime = this.rountTime(endTime, interval);
+        const len = Math.ceil((endTime - startTime) / interval);
+        const result = [];
+        for (let i = 0; i <= len; i++) {
+            const time = startTime + (i * interval);
+            const measurement = measurements.find((item) => item[0] === time);
+            if (!measurement && i === len) {
+                break;
+            }
+            result.push([time, '', measurement?.[2] || this.#createMeasurement(config.type).value]);
         }
         return result;
     }
@@ -31,21 +59,23 @@ export class Measurements {
         const endTime = options.endTime || Date.now();
         const startTime = options.startTime || 0;
         const data = [];
-        for (let [key, { config, current, time }] of this.measurements.entries()) {
-            if (!options.keys?.length || options.keys.includes(key)) {
-                let measurements = await this.storage.range(key, startTime, endTime);
-                if (current && time >= startTime && time < endTime) {
-                    measurements.push([time, current.value]);
+        for (let [key, config] of this.measurements.entries()) {
+            if (!options.keys?.length || options.keys.includes(config.key)) {
+                const current = this.currentMeasurements.get(config.key);
+                const interval = options.downsample || config.interval;
+                let measurements = await this.store.query(config.key, startTime, endTime);
+                if (current && current.time >= this.rountTime(startTime, config.interval) && current.time < endTime) {
+                    measurements.entries.push([current.time, '', current.measurement.value]);
                 }
                 if (options.downsample) {
-                    // measurements = this.downsample(measurements, options.downsample);
+                    measurements.entries = this.downsample(key, measurements.entries, interval);
                 }
                 data.push({
                     config: {
                         ...config,
-                        interval: options.downsample || config.interval,
+                        interval,
                     },
-                    measurements,
+                    measurements: options.fill && startTime ? this.fill(key, measurements.entries, startTime, endTime, interval) : measurements.entries,
                 });
             }
         }
@@ -53,50 +83,49 @@ export class Measurements {
     }
     async import(measurements) {
         for (let measurement of measurements) {
-            const key = measurement.config.key;
+            const config = measurement.config;
+            const key = config.key;
             if (!this.measurements.has(key)) {
-                this.measurements.set(key, {
-                    config: measurement.config,
-                    time: 0,
-                });
+                this.measurements.set(key, config);
             }
-            const { config } = this.measurements.get(key);
-            for (let [time, value] of measurement.measurements) {
-                time = Math.floor(time / config.interval) * config.interval;
-                const m = this.#createMeasurement(config.type);
-                m.value = value;
-                this.storage.put(key, time, m);
+            if (Array.isArray(measurement.measurements)) {
+                for (let [time, label, value] of measurement.measurements) {
+                    time = Math.floor(time / config.interval) * config.interval;
+                    this.store.set(key, [time, label, value]);
+                }
             }
         }
     }
     push(metrics) {
         for (let key in metrics) {
             const values = metrics[key];
-            const { config } = this.measurements.get(key);
-            switch (config.type) {
-                case 'counter':
-                    const counter = this.counter(key);
-                    for (let value of values) {
-                        counter.push(value);
-                    }
-                    break;
-                case 'number':
-                    this.number(key).push(values);
-                    break;
-                case 'value':
-                    this.value(key).push(values[values.length - 1]);
-                    break;
+            const config = this.getMeasurementConfig(key);
+            if (config) {
+                switch (config.type) {
+                    case 'counter':
+                        const counter = this.counter(key);
+                        for (let value of values) {
+                            counter.push(value);
+                        }
+                        break;
+                    case 'number':
+                        this.number(key).push(values);
+                        break;
+                    case 'value':
+                        this.value(key).push(values[values.length - 1]);
+                        break;
+                }
             }
         }
     }
     counter(key, time) {
-        return this.#getCurrentMeasurement(key, time);
+        return this.#ensureCurrentMeasurement(key, time);
     }
     number(key, time) {
-        return this.#getCurrentMeasurement(key, time);
+        return this.#ensureCurrentMeasurement(key, time);
     }
     value(key, time) {
-        return this.#getCurrentMeasurement(key, time);
+        return this.#ensureCurrentMeasurement(key, time);
     }
     #createMeasurement(type) {
         if (type instanceof CounterMeasurement) {
@@ -119,24 +148,23 @@ export class Measurements {
                 throw new Error('Unknown measurement type');
         }
     }
-    #getCurrentMeasurement(key, time = Date.now()) {
-        let measurement = this.measurements.get(key);
-        if (!measurement) {
-            throw new Error('Unknown measurement');
+    #ensureCurrentMeasurement(key, time = Date.now()) {
+        const config = this.getMeasurementConfig(key);
+        time = this.rountTime(time, config.interval);
+        const current = this.currentMeasurements.get(key);
+        if (current && current.time !== time) {
+            this.store.set(key, [current.time, '', current.measurement.value])
+                .catch(() => {
+                // TODO:
+            });
         }
-        const { config } = measurement;
-        time = Math.floor(time / config.interval) * config.interval;
-        if (!measurement.current || measurement.time < time) {
-            if (measurement.current) {
-                this.storage.put(key, measurement.time, measurement.current.value)
-                    .catch(() => {
-                    // TODO:
-                });
-            }
-            measurement.current = this.#createMeasurement(config.type);
-            measurement.time = time;
+        if (!current || current.time !== time) {
+            this.currentMeasurements.set(key, {
+                measurement: this.#createMeasurement(config.type),
+                time,
+            });
         }
-        return measurement.current;
+        return this.currentMeasurements.get(key).measurement;
     }
 }
 export class MeasurementBase {
@@ -161,9 +189,9 @@ export class CounterMeasurement extends MeasurementBase {
 export class NumberMeasurement extends MeasurementBase {
     value = {
         avg: null,
+        count: 0,
         min: null,
         max: null,
-        samples: 0,
         sum: 0,
     };
     push(value) {
@@ -174,9 +202,9 @@ export class NumberMeasurement extends MeasurementBase {
         else if (typeof value === 'number') {
             this.push({
                 avg: null,
+                count: 1,
                 min: value,
                 max: value,
-                samples: 1,
                 sum: value,
             });
         }
@@ -188,8 +216,8 @@ export class NumberMeasurement extends MeasurementBase {
                 this.value.min = value.max;
             }
             this.value.sum = this.value.sum + value.sum;
-            this.value.samples = this.value.samples + value.samples;
-            this.value.avg = Math.floor((this.value.sum / this.value.samples) * 10000) / 10000;
+            this.value.count = this.value.count + value.count;
+            this.value.avg = Math.floor((this.value.sum / this.value.count) * 10000) / 10000;
         }
     }
 }

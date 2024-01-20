@@ -1,17 +1,20 @@
-import { MemoryStorage } from './storage.js';
-import type { ExportOptions, MeasurementConfig, MeasurementExported, Init } from './types.js';
+import type { ExportOptions, MeasurementConfig, MeasurementExported, Init, Store } from './types.js';
 export declare class Measurements {
     #private;
     readonly init: Init;
-    readonly measurements: Map<string, {
-        config: MeasurementConfig;
-        current?: MeasurementBase;
+    readonly store: Store;
+    readonly currentMeasurements: Map<string, {
+        measurement: MeasurementBase;
         time: number;
     }>;
-    readonly storage: MemoryStorage;
-    constructor(init: Init);
-    downsample<T>(measurements: [number, T][], interval: number): [number, T][];
-    export(options?: ExportOptions): Promise<MeasurementExported[]>;
+    readonly measurements: Map<string, MeasurementConfig>;
+    constructor(init: Init, store: Store);
+    getMeasurementConfig(key: string): MeasurementConfig;
+    reset(): void;
+    rountTime(time: number, interval: number): number;
+    downsample<T>(key: string, measurements: [number, string, T][], interval: number): [number, string, T][];
+    fill<T>(key: string, measurements: [number, string, T][], startTime: number, endTime: number, interval: number): [number, string, T][];
+    export<T>(options?: ExportOptions): Promise<MeasurementExported<T>[]>;
     import(measurements: MeasurementExported[]): Promise<void>;
     push(metrics: Record<string, number[]>): void;
     counter(key: string, time?: number): CounterMeasurement;
@@ -33,9 +36,9 @@ export declare class CounterMeasurement extends MeasurementBase {
 export declare class NumberMeasurement extends MeasurementBase {
     value: {
         avg: null | number;
+        count: number;
         min: null | number;
         max: null | number;
-        samples: number;
         sum: number;
     };
     push(value: number | number[] | NumberMeasurement['value']): void;

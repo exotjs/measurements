@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { Measurements } from '../lib/measurements.js';
+import { MemoryStore } from '../lib/store.js';
 
 async function delay(delay: number) {
   return new Promise((resolve) => {
@@ -8,6 +9,10 @@ async function delay(delay: number) {
 }
 
 describe('Measurements', () => {
+  const store = new MemoryStore({
+    evictionInterval: 1000,
+  });
+
   let measurements: Measurements;
 
   beforeEach(() => {
@@ -17,7 +22,7 @@ describe('Measurements', () => {
         key: 'test',
         type: 'counter',
       }],
-    });
+    }, store);
   });
 
   describe('Intervals', () => {
