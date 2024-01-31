@@ -1,3 +1,4 @@
+import { EventEmitter } from 'node:events';
 import type { ExportOptions, MeasurementConfig, MeasurementExported, Init, Store } from './types.js';
 
 export class Measurements {
@@ -21,6 +22,7 @@ export class Measurements {
   }
 
   reset() {
+    this.store.clear();
     this.currentMeasurements.clear();
     this.measurements.clear();
     for (let measurement of this.init.measurements) {
@@ -39,7 +41,7 @@ export class Measurements {
       time = this.rountTime(time, interval);
       let target = result.find((item) => item[0] === time)?.[2];
       if (!target) {
-        target = this.#createMeasurement(config.type); 
+        target = this.#createMeasurement(config, time); 
         result.push([time, label, target]);
       }
       target.push(value);
@@ -59,7 +61,7 @@ export class Measurements {
       if (!measurement && i === len) {
         break;
       }
-      result.push([time, '', measurement?.[2] || this.#createMeasurement(config.type).value as T]);
+      result.push([time, '', measurement?.[2] || this.#createMeasurement(config, time).value as T]);
     }
     return result;
   }
@@ -142,23 +144,14 @@ export class Measurements {
     return this.#ensureCurrentMeasurement(key, time) as ValueMeasurement;
   }
 
-  #createMeasurement(type: string | MeasurementBase) {
-    if (type instanceof CounterMeasurement) {
-      return new CounterMeasurement();
-    }
-    if (type instanceof NumberMeasurement) {
-      return new NumberMeasurement();
-    }
-    if (type instanceof ValueMeasurement) {
-      return new ValueMeasurement();
-    }
-    switch (type) {
+  #createMeasurement(config: MeasurementConfig, time: number) {
+    switch (config.type) {
       case 'counter':
-        return new CounterMeasurement();
+        return new CounterMeasurement(config.key, time, this.store);
       case 'number':
-        return new NumberMeasurement();
+        return new NumberMeasurement(config.key, time, this.store);
       case 'value':
-        return new ValueMeasurement();
+        return new ValueMeasurement(config.key, time, this.store);
       default:
         throw new Error('Unknown measurement type');
     }
@@ -168,15 +161,9 @@ export class Measurements {
     const config = this.getMeasurementConfig(key);
     time = this.rountTime(time, config.interval);
     const current = this.currentMeasurements.get(key);
-    if (current && current.time !== time) {
-      this.store.set(key, [current.time, '', current.measurement.value])
-        .catch(() => {
-          // TODO:
-        });
-    }
     if (!current || current.time !== time) {
       this.currentMeasurements.set(key, {
-        measurement: this.#createMeasurement(config.type),
+        measurement: this.#createMeasurement(config, time),
         time,
       });
     }
@@ -187,17 +174,27 @@ export class Measurements {
 export abstract class MeasurementBase<T = any> {
   value!: T;
 
+  constructor(
+    readonly key: string,
+    readonly time: number,
+    readonly store: Store<T>,
+  ) {
+  }
+
   push(value: T) {
     this.value = value;
+    this.writeToStore();
   };
+
+  writeToStore() {
+    return this.store.set(this.key, [this.time, '', this.value]).catch(() => {
+      // noop
+    });
+  }
 }
 
 export class ValueMeasurement extends MeasurementBase {
   value = 0;
-
-  push(value: number) {
-    this.value = value;
-  }
 }
 
 export class CounterMeasurement extends MeasurementBase {
@@ -205,6 +202,7 @@ export class CounterMeasurement extends MeasurementBase {
 
   push(value: number = 1) {
     this.value = this.value + value;
+    this.writeToStore();
   }
 }
 
@@ -245,6 +243,7 @@ export class NumberMeasurement extends MeasurementBase {
       this.value.sum = this.value.sum + value.sum;
       this.value.count = this.value.count + value.count;
       this.value.avg = Math.floor((this.value.sum / this.value.count) * 10000) / 10000;
+      this.writeToStore();
     }
   }
 }

@@ -22,12 +22,16 @@ export declare class Measurements {
     value(key: string, time?: number): ValueMeasurement;
 }
 export declare abstract class MeasurementBase<T = any> {
+    readonly key: string;
+    readonly time: number;
+    readonly store: Store<T>;
     value: T;
+    constructor(key: string, time: number, store: Store<T>);
     push(value: T): void;
+    writeToStore(): Promise<void>;
 }
 export declare class ValueMeasurement extends MeasurementBase {
     value: number;
-    push(value: number): void;
 }
 export declare class CounterMeasurement extends MeasurementBase {
     value: number;

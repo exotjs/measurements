@@ -22,7 +22,7 @@ export interface MeasurementExported<T = any> {
   measurements: [number, string, T][];
 }
 
-export interface Store {
+export interface Store<Value = string> {
   clear(key?: string): Promise<void>;
   delete(
     key: string,
@@ -32,15 +32,15 @@ export interface Store {
   get(
     key: string,
     time: number
-  ): Promise<StoreEntry | undefined>;
+  ): Promise<StoreEntry<Value> | undefined>;
   push(
     key: string,
-    entry: StoreEntry,
+    entry: StoreEntry<Value>,
     expire?: number,
   ): Promise<void>;
   set(
     key: string,
-    entry: StoreEntry,
+    entry: StoreEntry<Value>,
     expire?: number,
   ): Promise<void>;
   query<T>(

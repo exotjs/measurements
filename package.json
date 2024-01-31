@@ -1,6 +1,6 @@
 {
-  "name": "@exotjs/inspector-measurements",
-  "version": "0.0.1",
+  "name": "@exotjs/measurements",
+  "version": "0.0.3",
   "description": "",
   "author": "Daniel Regeci",
   "license": "MIT",

@@ -18,13 +18,13 @@ export interface MeasurementExported<T = any> {
     config: MeasurementConfig;
     measurements: [number, string, T][];
 }
-export interface Store {
+export interface Store<Value = string> {
     clear(key?: string): Promise<void>;
     delete(key: string, time: number): Promise<void>;
     destroy(): Promise<void>;
-    get(key: string, time: number): Promise<StoreEntry | undefined>;
-    push(key: string, entry: StoreEntry, expire?: number): Promise<void>;
-    set(key: string, entry: StoreEntry, expire?: number): Promise<void>;
+    get(key: string, time: number): Promise<StoreEntry<Value> | undefined>;
+    push(key: string, entry: StoreEntry<Value>, expire?: number): Promise<void>;
+    set(key: string, entry: StoreEntry<Value>, expire?: number): Promise<void>;
     query<T>(key: string, startTime: number, endTime: number, limit?: number): Promise<StoreQueryResult>;
 }
 export type StoreEntry<Value = string> = [number, string, Value];
