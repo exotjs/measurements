@@ -1,13 +1,16 @@
 {
   "name": "@exotjs/measurements",
-  "version": "0.0.3",
+  "version": "0.1.0",
   "description": "",
   "author": "Daniel Regeci",
   "license": "MIT",
   "keywords": [
     "exot",
     "inspector",
-    "measurements"
+    "measurements",
+    "metrics",
+    "timeseries",
+    "store"
   ],
   "main": "./dist/index.js",
   "module": "./dist/index.js",

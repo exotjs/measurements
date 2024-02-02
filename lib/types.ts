@@ -1,12 +1,17 @@
 export interface MeasurementConfig {
+  decimals?: number;
+  flushDelay?: number;
   interval: number;
+  label?: string;
   key: string;
-  type: 'counter' | 'number' | 'value';
+  type: 'aggregate' | 'sum' | 'value';
   sensor?: string;
 }
 
 export interface Init {
   measurements: MeasurementConfig[];
+  onError?: (err: any) => void;
+  store: Store;
 }
 
 export interface ExportOptions {
@@ -22,28 +27,40 @@ export interface MeasurementExported<T = any> {
   measurements: [number, string, T][];
 }
 
-export interface Store<Value = string> {
+export interface Store {
   clear(key?: string): Promise<void>;
-  delete(
-    key: string,
-    time: number
-  ): Promise<void>;
   destroy(): Promise<void>;
-  get(
+  listDelete(
     key: string,
-    time: number
-  ): Promise<StoreEntry<Value> | undefined>;
-  push(
+    time: number,
+    label?: string,
+  ): Promise<void>;
+  listAdd<T>(
     key: string,
-    entry: StoreEntry<Value>,
+    time: number,
+    value: T,
+    label: string,
     expire?: number,
   ): Promise<void>;
-  set(
+  listQuery(
     key: string,
-    entry: StoreEntry<Value>,
+    startTime: number,
+    endTime: number,
+    limit?: number,
+  ): Promise<StoreQueryResult>;
+  setAdd<T>(
+    key: string,
+    time: number,
+    value: T,
+    label: string,
     expire?: number,
   ): Promise<void>;
-  query<T>(
+  setDelete(
+    key: string,
+    time: number,
+    label?: string,
+  ): Promise<void>;
+  setQuery(
     key: string,
     startTime: number,
     endTime: number,
@@ -60,4 +77,12 @@ export interface StoreQueryResult {
 
 export interface MemoryStoreInit {
   evictionInterval?: number;
+  maxEntries?: number;
+}
+
+export interface MemoryStoreDataEntry {
+  expire: number;
+  label: string;
+  time: number;
+  value: any;
 }

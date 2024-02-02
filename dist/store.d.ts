@@ -1,19 +1,16 @@
-import type { MemoryStoreInit, Store, StoreQueryResult, StoreEntry } from './types.js';
-interface MemoryStoreDataEntry {
-    entry: StoreEntry;
-    expire: number;
-}
+import type { MemoryStoreInit, MemoryStoreDataEntry, Store, StoreQueryResult } from './types.js';
 export declare class MemoryStore implements Store {
     #private;
-    readonly data: Map<string, MemoryStoreDataEntry[]>;
+    readonly lists: Map<string, MemoryStoreDataEntry[]>;
+    readonly sets: Map<string, Map<string, MemoryStoreDataEntry>>;
     readonly init: MemoryStoreInit;
-    constructor(init: MemoryStoreInit);
-    delete(key: string, time: number): Promise<void>;
+    constructor(init?: MemoryStoreInit);
     destroy(): Promise<void>;
-    get(key: string, time: number): Promise<StoreEntry | undefined>;
-    push(key: string, entry: StoreEntry, expire?: number): Promise<void>;
-    set(key: string, entry: StoreEntry, expire?: number): Promise<void>;
-    query(key: string, startTime: number, endTime: number, limit?: number): Promise<StoreQueryResult>;
+    listAdd<T>(key: string, time: number, value: T, label?: string, expire?: number): Promise<void>;
+    listDelete(key: string, time: number, label?: string): Promise<void>;
+    listQuery(key: string, startTime: number, endTime: number, limit?: number): Promise<StoreQueryResult>;
+    setAdd<T>(key: string, time: number, value: T, label?: string, expire?: number): Promise<void>;
+    setDelete(key: string, time: number, label?: string): Promise<void>;
+    setQuery(key: string, startTime: number, endTime: number, limit?: number): Promise<StoreQueryResult>;
     clear(key?: string): Promise<void>;
 }
-export {};
