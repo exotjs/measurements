@@ -3,7 +3,7 @@ import { SumMeasurement } from './measurements/sum.js';
 import { ValueMeasurement } from './measurements/value.js';
 import { roundTime } from './helpers.js';
 export class Measurements {
-    static createMeasurement(config, time, label) {
+    static createMeasurement(config, time = 0, label = '') {
         switch (config.type) {
             case 'aggregate':
                 return new AggregateMeasurement(config, time, label);
@@ -25,7 +25,7 @@ export class Measurements {
                     target = this.createMeasurement(config, time, label);
                     result.push([time, label, target]);
                 }
-                target.push(value);
+                target.push(target.inflate(value));
             }
             return {
                 config: {
@@ -50,7 +50,12 @@ export class Measurements {
                 if (!measurement && i === len) {
                     break;
                 }
-                result.push([time, label, measurement?.[2] || this.createMeasurement(config, time, label).deflate()]);
+                let value = measurement?.[2];
+                if (value === void 0) {
+                    const nulled = this.createMeasurement(config, time, label);
+                    value = nulled.deflate();
+                }
+                result.push([time, label, value]);
             }
             return {
                 config,
@@ -70,7 +75,9 @@ export class Measurements {
             store,
         };
         this.store = store;
-        this.reset();
+        for (let measurement of this.init.measurements) {
+            this.measurements.set(measurement.key, measurement);
+        }
     }
     getMeasurementConfig(key) {
         const config = this.measurements.get(key);
@@ -84,17 +91,17 @@ export class Measurements {
             this.init.onError(err);
         }
     }
-    destroy() {
+    async destroy() {
         this.reset();
         this.store.destroy();
     }
-    reset() {
+    async reset() {
         for (let [_, map] of this.currentMeasurements) {
             for (let [__, { measurement }] of map) {
                 measurement.destroy();
             }
         }
-        this.store.clear();
+        await this.store.clear();
         this.currentMeasurements.clear();
         this.measurements.clear();
         for (let measurement of this.init.measurements) {
@@ -113,12 +120,13 @@ export class Measurements {
                 if (map) {
                     for (let [_label, current] of map) {
                         if (current && current.time >= roundTime(startTime, config.interval) && current.time < endTime) {
+                            const value = current.measurement.deflate();
                             const exists = measurements.entries.find((entry) => entry[0] === current.time && entry[1] === current.label);
                             if (exists) {
-                                exists[2] = current.measurement.deflate();
+                                exists[2] = value;
                             }
                             else {
-                                measurements.entries.push([current.time, current.label, current.measurement.deflate()]);
+                                measurements.entries.push([current.time, current.label, value]);
                             }
                         }
                     }
@@ -198,7 +206,7 @@ export class Measurements {
                 current.measurement.destroy();
             }
             measurement = Measurements.createMeasurement(config, time, label);
-            measurement.on('flush', () => {
+            measurement.onFlush(() => {
                 if (measurement && !measurement.destroyed) {
                     this.store.setAdd(measurement.config.key, measurement.time, measurement.deflate(), measurement.label).catch((err) => {
                         this.onError(err);

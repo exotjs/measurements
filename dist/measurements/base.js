@@ -1,25 +1,29 @@
-import { EventEmitter } from 'node:events';
 import { trimNumber } from '../helpers.js';
-export class BaseMeasurement extends EventEmitter {
+export class BaseMeasurement {
     config;
     time;
     label;
     #flushTimeout;
+    #onFlush;
     destroyed = false;
     value;
     constructor(config, time, label = '') {
-        super();
         this.config = config;
         this.time = time;
         this.label = label;
+    }
+    #triggerFlush() {
+        if (this.#onFlush) {
+            this.#onFlush(this.value, this.time, this.config);
+        }
     }
     destroy() {
         if (this.#flushTimeout) {
             clearInterval(this.#flushTimeout);
             this.#flushTimeout = void 0;
-            this.emitFlushEvent();
+            this.#triggerFlush();
         }
-        this.removeAllListeners();
+        this.#onFlush = void 0;
         // @ts-expect-error
         this.value = void 0;
         this.destroyed = true;
@@ -35,16 +39,16 @@ export class BaseMeasurement extends EventEmitter {
             if (!this.#flushTimeout) {
                 this.#flushTimeout = setTimeout(() => {
                     this.#flushTimeout = void 0;
-                    this.emitFlushEvent();
+                    this.#triggerFlush();
                 }, this.config.flushDelay);
             }
         }
         else {
-            this.emitFlushEvent();
+            this.#triggerFlush();
         }
     }
-    emitFlushEvent() {
-        this.emit('flush', this.value, this.time, this.config);
+    onFlush(fn) {
+        this.#onFlush = fn;
     }
     push(value) {
         this.value = value;

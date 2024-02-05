@@ -1,6 +1,6 @@
 {
   "name": "@exotjs/measurements",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "",
   "author": "Daniel Regeci",
   "license": "MIT",
@@ -27,6 +27,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
+    },
+    "./types": {
+      "types": "./dist/types.d.ts",
+      "import": "./dist/types.js"
     },
     "./store": {
       "types": "./dist/store.d.ts",

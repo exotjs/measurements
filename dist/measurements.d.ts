@@ -5,7 +5,7 @@ import { ValueMeasurement } from './measurements/value.js';
 import type { ExportOptions, MeasurementConfig, MeasurementExported, Init, Store } from './types.js';
 export declare class Measurements {
     #private;
-    static createMeasurement(config: MeasurementConfig, time: number, label: string): AggregateMeasurement | SumMeasurement | ValueMeasurement;
+    static createMeasurement(config: MeasurementConfig, time?: number, label?: string): AggregateMeasurement | SumMeasurement | ValueMeasurement;
     static downsample<T>(exported: MeasurementExported[], interval: number): {
         config: {
             interval: number;
@@ -33,8 +33,8 @@ export declare class Measurements {
     constructor(init: Init);
     getMeasurementConfig(key: string): MeasurementConfig;
     onError(err: any): void;
-    destroy(): void;
-    reset(): void;
+    destroy(): Promise<void>;
+    reset(): Promise<void>;
     export<T>(options?: ExportOptions): Promise<MeasurementExported<T>[]>;
     import(measurements: MeasurementExported[]): Promise<void>;
     push(data: Record<string, {

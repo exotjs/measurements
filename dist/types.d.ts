@@ -27,9 +27,9 @@ export interface Store {
     clear(key?: string): Promise<void>;
     destroy(): Promise<void>;
     listDelete(key: string, time: number, label?: string): Promise<void>;
-    listAdd<T>(key: string, time: number, value: T, label: string, expire?: number): Promise<void>;
+    listAdd<T>(key: string, time: number, value: T, label?: string, expire?: number): Promise<void>;
     listQuery(key: string, startTime: number, endTime: number, limit?: number): Promise<StoreQueryResult>;
-    setAdd<T>(key: string, time: number, value: T, label: string, expire?: number): Promise<void>;
+    setAdd<T>(key: string, time: number, value: T, label?: string, expire?: number): Promise<void>;
     setDelete(key: string, time: number, label?: string): Promise<void>;
     setQuery(key: string, startTime: number, endTime: number, limit?: number): Promise<StoreQueryResult>;
 }

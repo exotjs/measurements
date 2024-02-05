@@ -39,7 +39,7 @@ export interface Store {
     key: string,
     time: number,
     value: T,
-    label: string,
+    label?: string,
     expire?: number,
   ): Promise<void>;
   listQuery(
@@ -52,7 +52,7 @@ export interface Store {
     key: string,
     time: number,
     value: T,
-    label: string,
+    label?: string,
     expire?: number,
   ): Promise<void>;
   setDelete(

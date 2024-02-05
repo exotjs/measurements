@@ -21,7 +21,10 @@ export class MemoryStore implements Store {
     if (this.init.evictionInterval) {
       this.#evictExpiredInterval = setInterval(() => {
         this.#evictExpired();
-      }, this.init.evictionInterval).unref();
+      }, this.init.evictionInterval);
+      if (typeof this.#evictExpiredInterval !== 'number' && 'unref' in this.#evictExpiredInterval) {
+        this.#evictExpiredInterval.unref();
+      }
     }
   }
 

@@ -1,7 +1,5 @@
-/// <reference types="node" />
-import { EventEmitter } from 'node:events';
 import type { MeasurementConfig } from '../types.js';
-export declare abstract class BaseMeasurement<T = any> extends EventEmitter {
+export declare abstract class BaseMeasurement<T = any> {
     #private;
     readonly config: MeasurementConfig;
     readonly time: number;
@@ -13,6 +11,6 @@ export declare abstract class BaseMeasurement<T = any> extends EventEmitter {
     deflate(): any;
     inflate(value: any): T;
     flush(): void;
-    emitFlushEvent(): void;
+    onFlush(fn: (value: T, time: number, config: MeasurementConfig) => void): void;
     push(value: T): void;
 }

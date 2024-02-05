@@ -1,9 +1,10 @@
-import { EventEmitter } from 'node:events';
 import { trimNumber } from '../helpers.js';
 import type { MeasurementConfig } from '../types.js';
 
-export abstract class BaseMeasurement<T = any> extends EventEmitter {
+export abstract class BaseMeasurement<T = any> {
   #flushTimeout?: NodeJS.Timeout;
+
+  #onFlush?: (value: T, time: number, config: MeasurementConfig) => void;
 
   destroyed: boolean = false;
 
@@ -14,16 +15,21 @@ export abstract class BaseMeasurement<T = any> extends EventEmitter {
     readonly time: number,
     readonly label: string = '',
   ) {
-    super();
+  }
+
+  #triggerFlush() {
+    if (this.#onFlush) {
+      this.#onFlush(this.value, this.time, this.config);
+    }
   }
 
   destroy() {
     if (this.#flushTimeout) {
       clearInterval(this.#flushTimeout);
       this.#flushTimeout = void 0;
-      this.emitFlushEvent();
+      this.#triggerFlush();
     }
-    this.removeAllListeners();
+    this.#onFlush = void 0;
     // @ts-expect-error
     this.value = void 0;
     this.destroyed = true;
@@ -42,16 +48,16 @@ export abstract class BaseMeasurement<T = any> extends EventEmitter {
       if (!this.#flushTimeout) {
         this.#flushTimeout = setTimeout(() => {
           this.#flushTimeout = void 0;
-          this.emitFlushEvent();
+          this.#triggerFlush();
         }, this.config.flushDelay);
       }
     } else {
-      this.emitFlushEvent();
+      this.#triggerFlush();
     }
   }
 
-  emitFlushEvent() {
-    this.emit('flush', this.value, this.time, this.config);
+  onFlush(fn: (value: T, time: number, config: MeasurementConfig) => void) {
+    this.#onFlush = fn;
   }
 
   push(value: T) {
