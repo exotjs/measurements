@@ -2,6 +2,7 @@ import { AggregateMeasurement } from './measurements/aggregate.js';
 import { SumMeasurement } from './measurements/sum.js';
 import { ValueMeasurement } from './measurements/value.js';
 import { roundTime } from './helpers.js';
+const DEFAULT_EXPORT_DURATION = 60000 * 15;
 export class Measurements {
     static createMeasurement(config, time = 0, label = '') {
         switch (config.type) {
@@ -15,9 +16,10 @@ export class Measurements {
                 throw new Error('Unknown measurement type');
         }
     }
-    static downsample(exported, interval) {
+    static downsample(exported, downsampleInterval) {
         return exported.map(({ config, measurements }) => {
             const result = [];
+            const interval = downsampleInterval || config.interval;
             for (let [time, label, value] of measurements) {
                 time = roundTime(time, interval);
                 let target = result.find((item) => item[0] === time && item[1] === label)?.[2];
@@ -36,10 +38,10 @@ export class Measurements {
             };
         });
     }
-    static fill(exported, startTime, endTime) {
+    static fill(exported, startTime, endTime, fillInterval) {
         return exported.map(({ config, measurements }) => {
             const label = config.label || '';
-            const interval = config.interval;
+            const interval = fillInterval || config.interval;
             startTime = roundTime(startTime, interval);
             endTime = roundTime(endTime, interval);
             const len = Math.ceil((endTime - startTime) / interval);
@@ -110,7 +112,11 @@ export class Measurements {
     }
     async export(options = {}) {
         const endTime = options.endTime || Date.now();
-        const startTime = options.startTime || 0;
+        const startTime = options.startTime || (endTime - DEFAULT_EXPORT_DURATION);
+        const duration = endTime - startTime;
+        if (duration <= 0) {
+            throw new Error('Invalid time span.');
+        }
         const filterKeys = options.keys?.map((key) => key.includes('*') ? new RegExp(key.replace(/\*/g, '[^\\:\\.]+')) : key);
         let data = [];
         for (let [key, config] of this.measurements.entries()) {
@@ -137,11 +143,9 @@ export class Measurements {
                 });
             }
         }
-        if (options.downsample) {
-            data = Measurements.downsample(data, options.downsample);
-        }
+        data = Measurements.downsample(data, options.downsample);
         if (options.fill) {
-            data = Measurements.fill(data, startTime, endTime);
+            data = Measurements.fill(data, startTime, endTime, options.downsample);
         }
         return data;
     }

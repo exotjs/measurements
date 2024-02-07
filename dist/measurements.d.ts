@@ -6,7 +6,7 @@ import type { ExportOptions, MeasurementConfig, MeasurementExported, Init, Store
 export declare class Measurements {
     #private;
     static createMeasurement(config: MeasurementConfig, time?: number, label?: string): AggregateMeasurement | SumMeasurement | ValueMeasurement;
-    static downsample<T>(exported: MeasurementExported[], interval: number): {
+    static downsample<T>(exported: MeasurementExported[], downsampleInterval?: number): {
         config: {
             interval: number;
             decimals?: number | undefined;
@@ -18,7 +18,7 @@ export declare class Measurements {
         };
         measurements: [number, string, T][];
     }[];
-    static fill<T>(exported: MeasurementExported[], startTime: number, endTime: number): {
+    static fill<T>(exported: MeasurementExported[], startTime: number, endTime: number, fillInterval?: number): {
         config: MeasurementConfig;
         measurements: [number, string, T][];
     }[];

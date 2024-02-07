@@ -5,6 +5,8 @@ import { ValueMeasurement } from './measurements/value.js';
 import { roundTime } from './helpers.js';
 import type { ExportOptions, MeasurementConfig, MeasurementExported, Init, Store } from './types.js';
 
+const DEFAULT_EXPORT_DURATION = 60000 * 15;
+
 export class Measurements {
   static createMeasurement(config: MeasurementConfig, time: number = 0, label: string = '') {
     switch (config.type) {
@@ -19,9 +21,10 @@ export class Measurements {
     }
   }
 
-  static downsample<T>(exported: MeasurementExported[], interval: number) {
+  static downsample<T>(exported: MeasurementExported[], downsampleInterval?: number) {
     return exported.map(({ config, measurements }) => {
       const result: [number, string, BaseMeasurement][] = [];
+      const interval = downsampleInterval || config.interval;
       for (let [ time, label, value ] of measurements) {
         time = roundTime(time, interval);
         let target = result.find((item) => item[0] === time && item[1] === label)?.[2];
@@ -41,10 +44,10 @@ export class Measurements {
     });
   }
   
-  static fill<T>(exported: MeasurementExported[], startTime: number, endTime: number) {
+  static fill<T>(exported: MeasurementExported[], startTime: number, endTime: number, fillInterval?: number) {
     return exported.map(({ config, measurements }) => {
       const label = config.label || '';
-      const interval = config.interval;
+      const interval = fillInterval || config.interval;
       startTime = roundTime(startTime, interval);
       endTime = roundTime(endTime, interval);
       const len = Math.ceil((endTime - startTime) / interval);
@@ -133,7 +136,11 @@ export class Measurements {
 
   async export<T>(options: ExportOptions = {}): Promise<MeasurementExported<T>[]> {
     const endTime = options.endTime || Date.now();
-    const startTime = options.startTime || 0;
+    const startTime = options.startTime || (endTime - DEFAULT_EXPORT_DURATION);
+    const duration = endTime - startTime;
+    if (duration <= 0) {
+      throw new Error('Invalid time span.');
+    }
     const filterKeys = options.keys?.map((key) => key.includes('*') ? new RegExp(key.replace(/\*/g, '[^\\:\\.]+')) : key);
     let data: MeasurementExported[] = [];
     for (let [ key, config ] of this.measurements.entries()) {
@@ -159,11 +166,9 @@ export class Measurements {
         });
       }
     }
-    if (options.downsample) {
-      data =  Measurements.downsample(data, options.downsample);
-    }
+    data =  Measurements.downsample(data, options.downsample);
     if (options.fill) {
-      data = Measurements.fill(data, startTime, endTime);
+      data = Measurements.fill(data, startTime, endTime, options.downsample);
     }
     return data;
   }

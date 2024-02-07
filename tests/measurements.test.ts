@@ -125,7 +125,10 @@ describe('Measurements', () => {
       const counter = measurements.sum('test:sum', time);
       number.push(1);
       counter.push(1);
-      const data = await measurements.export();
+      const data = await measurements.export({
+        startTime: time,
+        endTime: time + interval,
+      });
       expect(data.find(({ config }) => config.key === 'test:sum')?.measurements).toEqual([
         [time, '', 1],
       ]);
