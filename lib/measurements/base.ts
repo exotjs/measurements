@@ -1,7 +1,7 @@
 import { trimNumber } from '../helpers.js';
 import type { MeasurementConfig } from '../types.js';
 
-export abstract class BaseMeasurement<T = any> {
+export abstract class BaseMeasurement<T = unknown> {
   #flushTimeout?: NodeJS.Timeout;
 
   #onFlush?: (value: T, time: number, config: MeasurementConfig) => void;
@@ -13,9 +13,8 @@ export abstract class BaseMeasurement<T = any> {
   constructor(
     readonly config: MeasurementConfig,
     readonly time: number,
-    readonly label: string = '',
-  ) {
-  }
+    readonly label: string = ''
+  ) {}
 
   #triggerFlush() {
     if (this.#onFlush) {
@@ -30,17 +29,18 @@ export abstract class BaseMeasurement<T = any> {
       this.#triggerFlush();
     }
     this.#onFlush = void 0;
-    // @ts-expect-error
-    this.value = void 0;
+    this.value = void 0 as T;
     this.destroyed = true;
   }
 
-  deflate(): any {
-    return typeof this.value === 'number' ? trimNumber(this.value, this.config.decimals) : this.value;
+  deflate(): unknown {
+    return typeof this.value === 'number'
+      ? trimNumber(this.value, this.config.decimals)
+      : this.value;
   }
 
-  inflate(value: any): T {
-    return value;
+  inflate(value: unknown): T {
+    return value as T;
   }
 
   flush() {
@@ -63,5 +63,5 @@ export abstract class BaseMeasurement<T = any> {
   push(value: T) {
     this.value = value;
     this.flush();
-  };
+  }
 }

@@ -5,7 +5,7 @@ export class SumMeasurement extends BaseMeasurement {
 
   push(value: number | number[]) {
     if (Array.isArray(value)) {
-      for (let v of value) {
+      for (const v of value) {
         this.value = this.value + v;
       }
     } else {

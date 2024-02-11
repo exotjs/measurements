@@ -1,4 +1,10 @@
-import type { MemoryStoreInit, MemoryStoreDataEntry, Store, StoreQueryResult, StoreEntry } from './types.js';
+import type {
+  MemoryStoreInit,
+  MemoryStoreDataEntry,
+  Store,
+  StoreQueryResult,
+  StoreEntry,
+} from './types.js';
 
 export class MemoryStore implements Store {
   readonly lists: Map<string, MemoryStoreDataEntry[]> = new Map();
@@ -10,10 +16,7 @@ export class MemoryStore implements Store {
   #evictExpiredInterval?: NodeJS.Timeout;
 
   constructor(init: MemoryStoreInit = {}) {
-    const {
-      evictionInterval = 5 * 60000, 
-      maxEntries,
-    } = init;
+    const { evictionInterval = 5 * 60000, maxEntries } = init;
     this.init = {
       evictionInterval,
       maxEntries,
@@ -22,7 +25,10 @@ export class MemoryStore implements Store {
       this.#evictExpiredInterval = setInterval(() => {
         this.#evictExpired();
       }, this.init.evictionInterval);
-      if (typeof this.#evictExpiredInterval !== 'number' && 'unref' in this.#evictExpiredInterval) {
+      if (
+        typeof this.#evictExpiredInterval !== 'number' &&
+        'unref' in this.#evictExpiredInterval
+      ) {
         this.#evictExpiredInterval.unref();
       }
     }
@@ -30,15 +36,15 @@ export class MemoryStore implements Store {
 
   #evictExpired() {
     const now = Date.now();
-    for (let [ _, list ] of this.lists) {
+    for (let [_, list] of this.lists) {
       for (let entry of list) {
         if (entry.expire && entry.expire < now) {
           list.splice(list.indexOf(entry), 1);
         }
       }
     }
-    for (let [ key, map ] of this.sets) {
-      for (let [ _, { expire, time, label } ] of map) {
+    for (let [key, map] of this.sets) {
+      for (let [_, { expire, time, label }] of map) {
         if (expire && expire < now) {
           this.setDelete(key, time, label);
         }
@@ -50,7 +56,7 @@ export class MemoryStore implements Store {
     const maxEntries = this.init.maxEntries;
     const map = this.sets.get(key);
     if (map && maxEntries && map.size > maxEntries) {
-      for (let [ k ] of map) {
+      for (let [k] of map) {
         map.delete(k);
         if (map.size <= maxEntries) {
           break;
@@ -82,7 +88,7 @@ export class MemoryStore implements Store {
   }
 
   async destroy(): Promise<void> {
-    this.clear(); 
+    this.clear();
     if (this.#evictExpiredInterval) {
       clearInterval(this.#evictExpiredInterval);
       this.#evictExpiredInterval = void 0;
@@ -91,9 +97,9 @@ export class MemoryStore implements Store {
   async listAdd<T>(
     key: string,
     time: number,
+    label: string,
     value: T,
-    label: string = '',
-    expire: number = 0,
+    expire: number = 0
   ): Promise<void> {
     const list = this.#ensureList(key);
     list.push({
@@ -106,11 +112,13 @@ export class MemoryStore implements Store {
       list.splice(0, list.length - this.init.maxEntries);
     }
   }
-  
-  async listDelete(key: string, time: number, label: string = '') {
+
+  async listDelete(key: string, time: number, label: string) {
     const list = this.lists.get(key);
     if (list) {
-      const toDelete = list.filter((entry) => entry.time === time && entry.label === label);
+      const toDelete = list.filter(
+        (entry) => entry.time === time && entry.label === label
+      );
       for (let entry of toDelete) {
         list.splice(list.indexOf(entry), 1);
       }
@@ -120,8 +128,8 @@ export class MemoryStore implements Store {
   async listQuery(
     key: string,
     startTime: number,
-    endTime: number,
-    limit: number = 1000,
+    endTime: number = -1,
+    limit: number = 1000
   ): Promise<StoreQueryResult> {
     const now = Date.now();
     const list = this.lists.get(key);
@@ -134,8 +142,7 @@ export class MemoryStore implements Store {
     const entries: StoreEntry[] = [];
     for (let { expire, label, time, value } of list) {
       if (expire && expire < now) {
-        this.setDelete(key, time);
-
+        this.setDelete(key, time, label);
       } else if (time >= startTime && (endTime === -1 || time < endTime)) {
         entries.push([time, label, value]);
         if (entries.length === limit) {
@@ -152,9 +159,9 @@ export class MemoryStore implements Store {
   async setAdd<T>(
     key: string,
     time: number,
+    label: string,
     value: T,
-    label: string = '',
-    expire: number = 0,
+    expire: number = 0
   ): Promise<void> {
     const uid = this.#getEntryUid(time, label);
     const map = this.#ensureSet(key);
@@ -172,7 +179,7 @@ export class MemoryStore implements Store {
     }
   }
 
-  async setDelete(key: string, time: number, label: string = '') {
+  async setDelete(key: string, time: number, label: string) {
     const map = this.sets.get(key);
     if (map) {
       map.delete(this.#getEntryUid(time, label));
@@ -183,7 +190,7 @@ export class MemoryStore implements Store {
     key: string,
     startTime: number,
     endTime: number,
-    limit: number = 1000,
+    limit: number = 1000
   ): Promise<StoreQueryResult> {
     const now = Date.now();
     const map = this.sets.get(key);
@@ -194,10 +201,9 @@ export class MemoryStore implements Store {
       };
     }
     const entries: StoreEntry[] = [];
-    for (let [ _, { expire, label, time, value } ] of map) {
+    for (let [_, { expire, label, time, value }] of map) {
       if (expire && expire < now) {
-        this.setDelete(key, time);
-
+        this.setDelete(key, time, label);
       } else if (time >= startTime && (endTime === -1 || time < endTime)) {
         entries.push([time, label, value]);
         if (entries.length === limit) {
@@ -216,8 +222,8 @@ export class MemoryStore implements Store {
       this.lists.delete(key);
       this.sets.delete(key);
     } else {
-      this.lists.clear();  
-      this.sets.clear();  
+      this.lists.clear();
+      this.sets.clear();
     }
   }
 }

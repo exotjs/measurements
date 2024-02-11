@@ -10,14 +10,14 @@ export declare class AggregateMeasurement extends BaseMeasurement {
         sum: number;
     };
     deflate(): (number | null)[];
-    inflate(value: any): {
-        avg: any;
-        count: any;
-        first: any;
-        last: any;
-        min: any;
-        max: any;
-        sum: any;
+    inflate(value: (number | null)[]): {
+        avg: number | null;
+        count: number | null;
+        first: number | null;
+        last: number | null;
+        min: number | null;
+        max: number | null;
+        sum: number | null;
     };
     push(value: number | number[] | AggregateMeasurement['value']): void;
 }

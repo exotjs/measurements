@@ -6,19 +6,23 @@ import type { MeasurementConfig } from '../lib/types.js';
 
 const interval = 100;
 
-const measurementsConfig: MeasurementConfig[] = [{
-  interval,
-  key: 'test:value',
-  type: 'value',
-}, {
-  interval,
-  key: 'test:sum',
-  type: 'sum',
-}, {
-  interval,
-  key: 'test:aggregate',
-  type: 'aggregate',
-}];
+const measurementsConfig: MeasurementConfig[] = [
+  {
+    interval,
+    key: 'test:value',
+    type: 'value',
+  },
+  {
+    interval,
+    key: 'test:sum',
+    type: 'sum',
+  },
+  {
+    interval,
+    key: 'test:aggregate',
+    type: 'aggregate',
+  },
+];
 
 async function delay(delay: number) {
   return new Promise((resolve) => {
@@ -129,12 +133,12 @@ describe('Measurements', () => {
         startTime: time,
         endTime: time + interval,
       });
-      expect(data.find(({ config }) => config.key === 'test:sum')?.measurements).toEqual([
-        [time, '', 1],
-      ]);
-      expect(data.find(({ config }) => config.key === 'test:aggregate')?.measurements).toEqual([
-        [time, '', [1, 1, 1, 1, 1, 1, 1]],
-      ]);
+      expect(
+        data.find(({ config }) => config.key === 'test:sum')?.measurements
+      ).toEqual([[time, '', 1]]);
+      expect(
+        data.find(({ config }) => config.key === 'test:aggregate')?.measurements
+      ).toEqual([[time, '', [1, 1, 1, 1, 1, 1, 1]]]);
     });
 
     it('should fill non-existent times', async () => {
@@ -144,10 +148,12 @@ describe('Measurements', () => {
       const data = await measurements.export({
         fill: true,
         endTime: time + interval,
-        startTime: time - (interval * 2),
+        startTime: time - interval * 2,
       });
-      expect(data.find(({ config }) => config.key === 'test:sum')?.measurements).toEqual([
-        [time - (interval * 2), '', 0],
+      expect(
+        data.find(({ config }) => config.key === 'test:sum')?.measurements
+      ).toEqual([
+        [time - interval * 2, '', 0],
         [time - interval, '', 0],
         [time, '', 1],
       ]);
@@ -155,15 +161,17 @@ describe('Measurements', () => {
 
     it('should downsample entries', async () => {
       const time = interval * 6;
-      for (let t = time - (6 * interval); t <= time; t += interval) {
+      for (let t = time - 6 * interval; t <= time; t += interval) {
         measurements.sum('test:sum', t).push(1);
       }
       const data = await measurements.export({
         downsample: interval * 3,
         endTime: time + interval,
-        startTime: time - (interval * 6),
+        startTime: time - interval * 6,
       });
-      expect(data.find(({ config }) => config.key === 'test:sum')?.measurements).toEqual([
+      expect(
+        data.find(({ config }) => config.key === 'test:sum')?.measurements
+      ).toEqual([
         [0, '', 3],
         [interval * 3, '', 3],
         [interval * 6, '', 1],
@@ -212,7 +220,9 @@ describe('Measurements', () => {
       expect(counter1.value).toEqual(2);
       expect(counter2.value).toEqual(3);
       const data = await measurements.export();
-      expect(data.find(({ config }) => config.key === 'test:sum')?.measurements).toEqual([
+      expect(
+        data.find(({ config }) => config.key === 'test:sum')?.measurements
+      ).toEqual([
         [time, 'label1', 2],
         [time, 'label2', 3],
       ]);

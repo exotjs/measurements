@@ -4,7 +4,7 @@ export class MemoryStore {
     init;
     #evictExpiredInterval;
     constructor(init = {}) {
-        const { evictionInterval = 5 * 60000, maxEntries, } = init;
+        const { evictionInterval = 5 * 60000, maxEntries } = init;
         this.init = {
             evictionInterval,
             maxEntries,
@@ -13,7 +13,8 @@ export class MemoryStore {
             this.#evictExpiredInterval = setInterval(() => {
                 this.#evictExpired();
             }, this.init.evictionInterval);
-            if (typeof this.#evictExpiredInterval !== 'number' && 'unref' in this.#evictExpiredInterval) {
+            if (typeof this.#evictExpiredInterval !== 'number' &&
+                'unref' in this.#evictExpiredInterval) {
                 this.#evictExpiredInterval.unref();
             }
         }
@@ -73,7 +74,7 @@ export class MemoryStore {
             this.#evictExpiredInterval = void 0;
         }
     }
-    async listAdd(key, time, value, label = '', expire = 0) {
+    async listAdd(key, time, label, value, expire = 0) {
         const list = this.#ensureList(key);
         list.push({
             expire,
@@ -85,7 +86,7 @@ export class MemoryStore {
             list.splice(0, list.length - this.init.maxEntries);
         }
     }
-    async listDelete(key, time, label = '') {
+    async listDelete(key, time, label) {
         const list = this.lists.get(key);
         if (list) {
             const toDelete = list.filter((entry) => entry.time === time && entry.label === label);
@@ -94,7 +95,7 @@ export class MemoryStore {
             }
         }
     }
-    async listQuery(key, startTime, endTime, limit = 1000) {
+    async listQuery(key, startTime, endTime = -1, limit = 1000) {
         const now = Date.now();
         const list = this.lists.get(key);
         if (!list) {
@@ -106,7 +107,7 @@ export class MemoryStore {
         const entries = [];
         for (let { expire, label, time, value } of list) {
             if (expire && expire < now) {
-                this.setDelete(key, time);
+                this.setDelete(key, time, label);
             }
             else if (time >= startTime && (endTime === -1 || time < endTime)) {
                 entries.push([time, label, value]);
@@ -120,7 +121,7 @@ export class MemoryStore {
             hasMore: entries.length < list.length,
         };
     }
-    async setAdd(key, time, value, label = '', expire = 0) {
+    async setAdd(key, time, label, value, expire = 0) {
         const uid = this.#getEntryUid(time, label);
         const map = this.#ensureSet(key);
         const exists = map.get(uid);
@@ -137,7 +138,7 @@ export class MemoryStore {
             this.#adjustSize(key);
         }
     }
-    async setDelete(key, time, label = '') {
+    async setDelete(key, time, label) {
         const map = this.sets.get(key);
         if (map) {
             map.delete(this.#getEntryUid(time, label));
@@ -155,7 +156,7 @@ export class MemoryStore {
         const entries = [];
         for (let [_, { expire, label, time, value }] of map) {
             if (expire && expire < now) {
-                this.setDelete(key, time);
+                this.setDelete(key, time, label);
             }
             else if (time >= startTime && (endTime === -1 || time < endTime)) {
                 entries.push([time, label, value]);

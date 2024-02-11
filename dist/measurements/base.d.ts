@@ -1,5 +1,5 @@
 import type { MeasurementConfig } from '../types.js';
-export declare abstract class BaseMeasurement<T = any> {
+export declare abstract class BaseMeasurement<T = unknown> {
     #private;
     readonly config: MeasurementConfig;
     readonly time: number;
@@ -8,8 +8,8 @@ export declare abstract class BaseMeasurement<T = any> {
     value: T;
     constructor(config: MeasurementConfig, time: number, label?: string);
     destroy(): void;
-    deflate(): any;
-    inflate(value: any): T;
+    deflate(): unknown;
+    inflate(value: unknown): T;
     flush(): void;
     onFlush(fn: (value: T, time: number, config: MeasurementConfig) => void): void;
     push(value: T): void;

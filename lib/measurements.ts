@@ -3,12 +3,23 @@ import { BaseMeasurement } from './measurements/base.js';
 import { SumMeasurement } from './measurements/sum.js';
 import { ValueMeasurement } from './measurements/value.js';
 import { roundTime } from './helpers.js';
-import type { ExportOptions, MeasurementConfig, MeasurementExported, Init, Store } from './types.js';
+import { MemoryStore } from './store.js';
+import type {
+  ExportOptions,
+  MeasurementConfig,
+  MeasurementExported,
+  Init,
+  Store,
+} from './types.js';
 
 const DEFAULT_EXPORT_DURATION = 60000 * 15;
 
 export class Measurements {
-  static createMeasurement(config: MeasurementConfig, time: number = 0, label: string = '') {
+  static createMeasurement(
+    config: MeasurementConfig,
+    time: number = 0,
+    label: string = ''
+  ) {
     switch (config.type) {
       case 'aggregate':
         return new AggregateMeasurement(config, time, label);
@@ -21,15 +32,20 @@ export class Measurements {
     }
   }
 
-  static downsample<T>(exported: MeasurementExported[], downsampleInterval?: number) {
+  static downsample<T>(
+    exported: MeasurementExported[],
+    downsampleInterval?: number
+  ) {
     return exported.map(({ config, measurements }) => {
       const result: [number, string, BaseMeasurement][] = [];
       const interval = downsampleInterval || config.interval;
-      for (let [ time, label, value ] of measurements) {
+      for (let [time, label, value] of measurements) {
         time = roundTime(time, interval);
-        let target = result.find((item) => item[0] === time && item[1] === label)?.[2];
+        let target = result.find(
+          (item) => item[0] === time && item[1] === label
+        )?.[2];
         if (!target) {
-          target = this.createMeasurement(config, time, label); 
+          target = this.createMeasurement(config, time, label);
           result.push([time, label, target]);
         }
         target.push(target.inflate(value));
@@ -39,12 +55,21 @@ export class Measurements {
           ...config,
           interval,
         },
-        measurements: result.map(([ time, label, measurement ]) => [time, label, measurement.deflate()]) as [number, string, T][],
+        measurements: result.map(([time, label, measurement]) => [
+          time,
+          label,
+          measurement.deflate(),
+        ]) as [number, string, T][],
       };
     });
   }
-  
-  static fill<T>(exported: MeasurementExported[], startTime: number, endTime: number, fillInterval?: number) {
+
+  static fill<T>(
+    exported: MeasurementExported[],
+    startTime: number,
+    endTime: number,
+    fillInterval?: number
+  ) {
     return exported.map(({ config, measurements }) => {
       const label = config.label || '';
       const interval = fillInterval || config.interval;
@@ -52,16 +77,16 @@ export class Measurements {
       endTime = roundTime(endTime, interval);
       const len = Math.ceil((endTime - startTime) / interval);
       const result: [number, string, T][] = [];
-      for (let i = 0; i <= len; i ++) {
-        const time = startTime + (i * interval);
+      for (let i = 0; i <= len; i++) {
+        const time = startTime + i * interval;
         const measurement = measurements.find((item) => item[0] === time);
         if (!measurement && i === len) {
           break;
         }
-        let value: T = measurement?.[2]
+        let value: T = measurement?.[2];
         if (value === void 0) {
           const nulled = this.createMeasurement(config, time, label);
-          value = nulled.deflate();
+          value = nulled.deflate() as T;
         }
         result.push([time, label, value]);
       }
@@ -72,11 +97,17 @@ export class Measurements {
     });
   }
 
-  readonly currentMeasurements: Map<string, Map<string, {
-    label: string;
-    measurement: BaseMeasurement;
-    time: number;
-  }>> = new Map();
+  readonly currentMeasurements: Map<
+    string,
+    Map<
+      string,
+      {
+        label: string;
+        measurement: BaseMeasurement;
+        time: number;
+      }
+    >
+  > = new Map();
 
   readonly init: Init;
 
@@ -85,17 +116,13 @@ export class Measurements {
   readonly store: Store;
 
   constructor(init: Init) {
-    const {
-      measurements,
-      onError,
-      store,
-    } = init;
+    const { measurements, onError, store } = init;
     this.init = {
       measurements,
       onError,
       store,
     };
-    this.store = store;
+    this.store = store || new MemoryStore();
     for (let measurement of this.init.measurements) {
       this.measurements.set(measurement.key, measurement);
     }
@@ -121,8 +148,8 @@ export class Measurements {
   }
 
   async reset() {
-    for (let [ _, map ] of this.currentMeasurements) {
-      for (let [ __, { measurement } ] of map) {
+    for (let [_, map] of this.currentMeasurements) {
+      for (let [__, { measurement }] of map) {
         measurement.destroy();
       }
     }
@@ -134,28 +161,46 @@ export class Measurements {
     }
   }
 
-  async export<T>(options: ExportOptions = {}): Promise<MeasurementExported<T>[]> {
+  async export<T>(
+    options: ExportOptions = {}
+  ): Promise<MeasurementExported<T>[]> {
     const endTime = options.endTime || Date.now();
-    const startTime = options.startTime || (endTime - DEFAULT_EXPORT_DURATION);
+    const startTime = options.startTime || endTime - DEFAULT_EXPORT_DURATION;
     const duration = endTime - startTime;
     if (duration <= 0) {
       throw new Error('Invalid time span.');
     }
-    const filterKeys = options.keys?.map((key) => key.includes('*') ? new RegExp(key.replace(/\*/g, '[^\\:\\.]+')) : key);
+    const filterKeys = options.keys?.map((key) =>
+      key.includes('*') ? new RegExp(key.replace(/\*/g, '[^\\:\\.]+')) : key
+    );
     let data: MeasurementExported[] = [];
-    for (let [ key, config ] of this.measurements.entries()) {
-      if (!filterKeys?.length || filterKeys.some((k) => k instanceof RegExp ? k.test(key) : k === key)) {
+    for (let [key, config] of this.measurements.entries()) {
+      if (
+        !filterKeys?.length ||
+        filterKeys.some((k) => (k instanceof RegExp ? k.test(key) : k === key))
+      ) {
         const map = this.currentMeasurements.get(config.key);
-        const measurements = await this.store.setQuery(config.key, startTime, endTime);
+        const measurements = await this.store.setQuery(
+          config.key,
+          startTime,
+          endTime
+        );
         if (map) {
-          for (let [ _label, current ] of map) {
-            if (current && current.time >= roundTime(startTime, config.interval) && current.time < endTime) {
+          for (let [_label, current] of map) {
+            if (
+              current &&
+              current.time >= roundTime(startTime, config.interval) &&
+              current.time < endTime
+            ) {
               const value = current.measurement.deflate();
-              const exists = measurements.entries.find((entry) => entry[0] === current.time && entry[1] === current.label);
+              const exists = measurements.entries.find(
+                (entry) =>
+                  entry[0] === current.time && entry[1] === current.label
+              );
               if (exists) {
-                exists[2] = value;
+                exists[2] = value as string;
               } else {
-                measurements.entries.push([current.time, current.label, value]);
+                measurements.entries.push([current.time, current.label, value as string]);
               }
             }
           }
@@ -166,7 +211,7 @@ export class Measurements {
         });
       }
     }
-    data =  Measurements.downsample(data, options.downsample);
+    data = Measurements.downsample(data, options.downsample);
     if (options.fill) {
       data = Measurements.fill(data, startTime, endTime, options.downsample);
     }
@@ -181,15 +226,15 @@ export class Measurements {
         this.measurements.set(key, config);
       }
       if (Array.isArray(measurement.measurements)) {
-        for (let [ time, label, value ] of measurement.measurements) {
+        for (let [time, label, value] of measurement.measurements) {
           time = roundTime(time, config.interval);
-          await this.store.setAdd(key, time, value, label);
+          await this.store.setAdd(key, time, label, value);
         }
       }
     }
   }
 
-  push(data: Record<string, { label?: string, values: number[] }[]>) {
+  push(data: Record<string, { label?: string; values: number[] }[]>) {
     for (let key in data) {
       const records = data[key];
       const config = this.getMeasurementConfig(key);
@@ -212,7 +257,11 @@ export class Measurements {
   }
 
   aggregate(key: string, time?: number, label?: string) {
-    return this.#ensureCurrentMeasurement(key, time, label) as AggregateMeasurement;
+    return this.#ensureCurrentMeasurement(
+      key,
+      time,
+      label
+    ) as AggregateMeasurement;
   }
 
   sum(key: string, time?: number, label?: string) {
@@ -223,7 +272,11 @@ export class Measurements {
     return this.#ensureCurrentMeasurement(key, time, label) as ValueMeasurement;
   }
 
-  #ensureCurrentMeasurement(key: string, time: number = Date.now(), label?: string) {
+  #ensureCurrentMeasurement(
+    key: string,
+    time: number = Date.now(),
+    label?: string
+  ) {
     const config = this.getMeasurementConfig(key);
     time = roundTime(time, config.interval);
     label = (label === void 0 ? config.label : label) || '';
@@ -241,9 +294,16 @@ export class Measurements {
       measurement = Measurements.createMeasurement(config, time, label);
       measurement.onFlush(() => {
         if (measurement && !measurement.destroyed) {
-          this.store.setAdd(measurement.config.key, measurement.time, measurement.deflate(), measurement.label).catch((err) => {
-            this.onError(err);
-          });
+          this.store
+            .setAdd(
+              measurement.config.key,
+              measurement.time,
+              measurement.label,
+              measurement.deflate()
+            )
+            .catch((err) => {
+              this.onError(err);
+            });
         }
       });
       map.set(label, {

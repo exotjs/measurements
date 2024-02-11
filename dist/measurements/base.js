@@ -24,12 +24,13 @@ export class BaseMeasurement {
             this.#triggerFlush();
         }
         this.#onFlush = void 0;
-        // @ts-expect-error
         this.value = void 0;
         this.destroyed = true;
     }
     deflate() {
-        return typeof this.value === 'number' ? trimNumber(this.value, this.config.decimals) : this.value;
+        return typeof this.value === 'number'
+            ? trimNumber(this.value, this.config.decimals)
+            : this.value;
     }
     inflate(value) {
         return value;
@@ -54,5 +55,4 @@ export class BaseMeasurement {
         this.value = value;
         this.flush();
     }
-    ;
 }

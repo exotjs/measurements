@@ -12,13 +12,27 @@ export class AggregateMeasurement extends BaseMeasurement {
     };
     deflate() {
         return [
-            this.value.first === null ? null : trimNumber(this.value.first, this.config.decimals),
-            this.value.last === null ? null : trimNumber(this.value.last, this.config.decimals),
-            this.value.count === null ? null : trimNumber(this.value.count, this.config.decimals),
-            this.value.sum === null ? null : trimNumber(this.value.sum, this.config.decimals),
-            this.value.min === null ? null : trimNumber(this.value.min, this.config.decimals),
-            this.value.max === null ? null : trimNumber(this.value.max, this.config.decimals),
-            this.value.avg === null ? null : trimNumber(this.value.avg, this.config.decimals),
+            this.value.first === null
+                ? null
+                : trimNumber(this.value.first, this.config.decimals),
+            this.value.last === null
+                ? null
+                : trimNumber(this.value.last, this.config.decimals),
+            this.value.count === null
+                ? null
+                : trimNumber(this.value.count, this.config.decimals),
+            this.value.sum === null
+                ? null
+                : trimNumber(this.value.sum, this.config.decimals),
+            this.value.min === null
+                ? null
+                : trimNumber(this.value.min, this.config.decimals),
+            this.value.max === null
+                ? null
+                : trimNumber(this.value.max, this.config.decimals),
+            this.value.avg === null
+                ? null
+                : trimNumber(this.value.avg, this.config.decimals),
         ];
     }
     inflate(value) {
@@ -52,15 +66,18 @@ export class AggregateMeasurement extends BaseMeasurement {
             if (this.value.first === null) {
                 this.value.first = value.first;
             }
-            if (value.max !== null && (this.value.max === null || value.max > this.value.max)) {
+            if (value.max !== null &&
+                (this.value.max === null || value.max > this.value.max)) {
                 this.value.max = value.max;
             }
-            if (value.min !== null && (this.value.min === null || value.min < this.value.min)) {
+            if (value.min !== null &&
+                (this.value.min === null || value.min < this.value.min)) {
                 this.value.min = value.max;
             }
             this.value.sum = this.value.sum + value.sum;
             this.value.count = this.value.count + value.count;
-            this.value.avg = Math.floor((this.value.sum / this.value.count) * 10000) / 10000;
+            this.value.avg =
+                Math.floor((this.value.sum / this.value.count) * 10000) / 10000;
             this.value.last = value.last;
             this.flush();
         }
