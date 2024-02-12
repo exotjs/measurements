@@ -200,7 +200,11 @@ export class Measurements {
               if (exists) {
                 exists[2] = value as string;
               } else {
-                measurements.entries.push([current.time, current.label, value as string]);
+                measurements.entries.push([
+                  current.time,
+                  current.label,
+                  value as string,
+                ]);
               }
             }
           }

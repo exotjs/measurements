@@ -40,7 +40,7 @@ describe('MemoryStore', () => {
       expect(result.hasMore).toEqual(false);
     });
 
-    it('should return one entry', async () => {
+    it('should return two entries', async () => {
       store.listAdd('test', 1, '', '1');
       store.listAdd('test', 2, '', '2');
       store.listAdd('test', 3, '', '3');
@@ -50,7 +50,7 @@ describe('MemoryStore', () => {
         [2, '', '2'],
         [3, '', '3'],
       ]);
-      expect(result.hasMore).toEqual(true);
+      expect(result.hasMore).toEqual(false);
     });
   });
 
@@ -122,7 +122,7 @@ describe('MemoryStore', () => {
       expect(result.hasMore).toEqual(false);
     });
 
-    it('should return one entry', async () => {
+    it('should return two entries', async () => {
       store.setAdd('test', 1, '', '1');
       store.setAdd('test', 2, '', '2');
       store.setAdd('test', 3, '', '3');
@@ -132,7 +132,7 @@ describe('MemoryStore', () => {
         [2, '', '2'],
         [3, '', '3'],
       ]);
-      expect(result.hasMore).toEqual(true);
+      expect(result.hasMore).toEqual(false);
     });
   });
 

@@ -145,14 +145,14 @@ export class MemoryStore implements Store {
         this.setDelete(key, time, label);
       } else if (time >= startTime && (endTime === -1 || time < endTime)) {
         entries.push([time, label, value]);
-        if (entries.length === limit) {
+        if (entries.length > limit) {
           break;
         }
       }
     }
     return {
-      entries,
-      hasMore: entries.length < list.length,
+      entries: entries.slice(0, limit),
+      hasMore: entries.length > limit,
     };
   }
 
@@ -206,14 +206,14 @@ export class MemoryStore implements Store {
         this.setDelete(key, time, label);
       } else if (time >= startTime && (endTime === -1 || time < endTime)) {
         entries.push([time, label, value]);
-        if (entries.length === limit) {
+        if (entries.length > limit) {
           break;
         }
       }
     }
     return {
-      entries,
-      hasMore: entries.length < map.size,
+      entries: entries.slice(0, limit),
+      hasMore: entries.length > limit,
     };
   }
 

@@ -140,7 +140,11 @@ export class Measurements {
                                 exists[2] = value;
                             }
                             else {
-                                measurements.entries.push([current.time, current.label, value]);
+                                measurements.entries.push([
+                                    current.time,
+                                    current.label,
+                                    value,
+                                ]);
                             }
                         }
                     }
