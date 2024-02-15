@@ -1,5 +1,5 @@
-import { trimNumber } from '../helpers.js';
-import type { MeasurementConfig } from '../types.js';
+import { trimNumber } from '../helpers.ts';
+import type { MeasurementConfig } from '../types.ts';
 
 export abstract class BaseMeasurement<T = unknown> {
   #flushTimeout?: unknown;

@@ -1,7 +1,7 @@
 {
   "name": "@exotjs/measurements",
-  "version": "0.1.4",
-  "description": "iIn-memory time series database with optional persistent storage for Exot Inspector.",
+  "version": "0.1.5",
+  "description": "In-memory time series database with optional persistent storage for Exot Inspector.",
   "author": "Daniel Regeci",
   "license": "MIT",
   "keywords": [
@@ -18,9 +18,11 @@
   "type": "module",
   "scripts": {
     "build": "rimraf dist && tsc -p tsconfig.build.json",
+    "denoify": "rimraf deno_dist && denoify && find deno_dist/. -type f -exec sed -i '' -e 's/node:node:/node:/g' {} +",
     "eslint": "eslint ./lib/**/*",
     "format": "prettier --write './(lib|tests)/**/*'",
-    "test": "vitest"
+    "test": "vitest",
+    "test:deno": "deno test tests/deno.ts"
   },
   "files": [
     "dist"
@@ -59,6 +61,7 @@
   "devDependencies": {
     "@types/node": "^20.9.0",
     "@typescript-eslint/eslint-plugin": "^6.21.0",
+    "denoify": "^1.6.9",
     "eslint": "^8.56.0",
     "prettier": "^3.2.5",
     "rimraf": "^5.0.5",

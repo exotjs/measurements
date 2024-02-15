@@ -4,7 +4,7 @@ import type {
   Store,
   StoreQueryResult,
   StoreEntry,
-} from './types.js';
+} from './types.ts';
 
 export class MemoryStore implements Store {
   readonly lists: Map<string, MemoryStoreDataEntry[]> = new Map();

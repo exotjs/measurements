@@ -97,6 +97,20 @@ describe('MemoryStore', () => {
       await new Promise((resolve) => setTimeout(resolve, 600));
       expect(store.sets.get('test')?.size).toEqual(0);
     });
+
+    it('should not replace existing entry with replace=false', async () => {
+      store.setAdd('test', 0, '', 'a', 0, false);
+      store.setAdd('test', 0, '', 'b', 0, false);
+      expect(store.sets.size).toEqual(1);
+      expect(Object.fromEntries(store.sets.get('test')!)).toEqual({
+        '0:': {
+          expire: 0,
+          label: '',
+          time: 0,
+          value: 'a',
+        },
+      });
+    });
   });
 
   describe('.setDelete()', () => {

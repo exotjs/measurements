@@ -14,7 +14,9 @@ export class MemoryStore {
                 this.#evictExpired();
             }, this.init.evictionInterval);
             if (typeof this.#evictExpiredInterval !== 'number' &&
+                // @ts-ignore
                 'unref' in this.#evictExpiredInterval) {
+                // @ts-ignore
                 this.#evictExpiredInterval.unref();
             }
         }
@@ -121,12 +123,14 @@ export class MemoryStore {
             hasMore: entries.length > limit,
         };
     }
-    async setAdd(key, time, label, value, expire = 0) {
+    async setAdd(key, time, label, value, expire = 0, replace = true) {
         const uid = this.#getEntryUid(time, label);
         const map = this.#ensureSet(key);
         const exists = map.get(uid);
         if (exists) {
-            exists.value = value;
+            if (replace) {
+                exists.value = value;
+            }
         }
         else {
             map.set(uid, {
