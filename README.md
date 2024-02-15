@@ -2,6 +2,8 @@
 
 Exot Measurements is an in-memory time series database with optional persistent storage. It serves as a core component of the [Exot Inspector](https://exot.dev) for storing metrics. This module is compatible with any JavaScript runtime, including Node.js, Bun, Deno, and web browsers.
 
+[![ci](https://github.com/exotjs/measurements/actions/workflows/ci.yml/badge.svg)](https://github.com/exotjs/measurements/actions/workflows/ci.yml)
+
 ## Features
 
 - Fast, in-memory time-series aggregations

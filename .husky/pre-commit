@@ -1,6 +1,6 @@
 npm run eslint
 npm test
-npm build
+npm run build
 npm run denoify
 git add dist
-git add dist_deno
+git add deno_dist

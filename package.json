@@ -21,7 +21,7 @@
     "denoify": "rimraf deno_dist && denoify && find deno_dist/. -type f -exec sed -i '' -e 's/node:node:/node:/g' {} +",
     "eslint": "eslint ./lib/**/*",
     "format": "prettier --write './(lib|tests)/**/*'",
-    "test": "vitest",
+    "test": "vitest run",
     "test:deno": "deno test tests/deno.ts",
     "prepare": "husky"
   },
