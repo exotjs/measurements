@@ -123,14 +123,12 @@ export class MemoryStore {
             hasMore: entries.length > limit,
         };
     }
-    async setAdd(key, time, label, value, expire = 0, replace = true) {
+    async setAdd(key, time, label, value, expire = 0) {
         const uid = this.#getEntryUid(time, label);
         const map = this.#ensureSet(key);
         const exists = map.get(uid);
         if (exists) {
-            if (replace) {
-                exists.value = value;
-            }
+            exists.value = value;
         }
         else {
             map.set(uid, {

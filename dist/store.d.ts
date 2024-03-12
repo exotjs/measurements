@@ -9,7 +9,7 @@ export declare class MemoryStore implements Store {
     listAdd<T>(key: string, time: number, label: string, value: T, expire?: number): Promise<void>;
     listDelete(key: string, time: number, label: string): Promise<void>;
     listQuery(key: string, startTime: number, endTime?: number, limit?: number): Promise<StoreQueryResult>;
-    setAdd<T>(key: string, time: number, label: string, value: T, expire?: number, replace?: boolean): Promise<void>;
+    setAdd<T>(key: string, time: number, label: string, value: T, expire?: number): Promise<void>;
     setDelete(key: string, time: number, label: string): Promise<void>;
     setQuery(key: string, startTime: number, endTime: number, limit?: number): Promise<StoreQueryResult>;
     clear(key?: string): Promise<void>;

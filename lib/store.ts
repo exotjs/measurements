@@ -164,15 +164,12 @@ export class MemoryStore implements Store {
     label: string,
     value: T,
     expire: number = 0,
-    replace: boolean = true
   ): Promise<void> {
     const uid = this.#getEntryUid(time, label);
     const map = this.#ensureSet(key);
     const exists = map.get(uid);
     if (exists) {
-      if (replace) {
-        exists.value = value;
-      }
+      exists.value = value;
     } else {
       map.set(uid, {
         expire,

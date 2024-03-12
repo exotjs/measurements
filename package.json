@@ -1,6 +1,6 @@
 {
   "name": "@exotjs/measurements",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "In-memory time series database with optional persistent storage for Exot Inspector.",
   "author": "Daniel Regeci",
   "license": "MIT",

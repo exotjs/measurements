@@ -50,7 +50,6 @@ export interface Store {
     label: string,
     value: T,
     expire?: number,
-    replace?: boolean
   ): Promise<void>;
   setDelete(key: string, time: number, label: string): Promise<void>;
   setQuery(
